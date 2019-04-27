@@ -1,0 +1,253 @@
+<!-- views/pages/index.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- begin::Head -->
+
+<head>
+		<% include ../partials/head %>
+		
+</head>
+
+<!-- end::Head -->
+
+<!-- begin::Body -->
+
+<body style="background-image: url(/static/assets/app/media/img/bg/bg-7.jpg)"
+	class="m-page--fluid m-page--loading-enabled m-page--loading m-header--fixed m-header--fixed-mobile m-footer--push m-aside--offcanvas-default">
+
+	<!-- begin::Page loader -->
+	<div class="m-page-loader m-page-loader--base">
+		<div class="m-blockui">
+			<span>Please wait...</span>
+			<span>
+				<div class="m-loader m-loader--brand"></div>
+			</span>
+		</div>
+	</div>
+
+	<!-- end::Page Loader -->
+
+	<!-- begin:: Page -->
+	<div class="m-grid m-grid--hor m-grid--root m-page">
+
+		<!-- begin::Header -->
+		<% include ../partials/header %>
+
+		<!-- end::Header -->
+
+		<!-- begin::Body -->
+		<div class="m-grid__item m-grid__item--fluid  m-grid m-grid--ver-desktop m-grid--desktop m-page__container m-body">
+			<div class="m-grid__item m-grid__item--fluid m-wrapper">
+
+				<!-- BEGIN: Subheader -->
+				<div class="m-subheader ">
+					<div class="d-flex align-items-center">
+						<div class="mr-auto">
+							<h3 class="m-subheader__title ">Sensors Live Data</h3>
+						</div>
+						<div>
+							<span class="m-subheader__daterange" id="m_dashboard_daterangepicker">
+								<span class="m-subheader__daterange-label">
+									<span class="m-subheader__daterange-title"></span>
+									<span class="m-subheader__daterange-date m--font-brand"></span>
+								</span>
+								<a href="#" class="btn btn-sm btn-brand m-btn m-btn--icon m-btn--icon-only m-btn--custom m-btn--pill">
+									<i class="la la-angle-down"></i>
+								</a>
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- END: Subheader -->
+                <div class="m-content">
+                    <div class="row">
+						<div class="col-xl-12">
+							<div class="m-portlet">
+								<div class="col-xl-12">
+									<div class="m-portlet">
+										<div id="container1" style="height: 400px; min-width: 310px"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xl-12">
+							<div class="m-portlet">
+								<div class="col-xl-12">
+									<div class="m-portlet">
+										<div id="container2" style="height: 400px; min-width: 310px"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+                    </div>
+                </div>
+			</div>
+		</div>
+
+		<!-- end::Body -->
+
+		<!-- begin::Footer -->
+		<% include ../partials/footer %>
+		
+		<!-- end::Footer -->
+	</div>
+
+	<!-- end:: Page -->
+
+	<!-- begin::Quick Sidebar -->
+	<% include ../partials/sidebar %>
+
+	<!-- end::Quick Sidebar -->
+
+	<% include ../partials/foot %>
+
+	<!--begin::Page Scripts -->
+	<script src="/static/assets/app/js/dashboard.js" type="text/javascript"></script>
+	<!--<script src="https://code.highcharts.com/stock/highstock.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+	<script src="https://code.highcharts.com/stock/modules/export-data.js"></script>-->
+	<script src="/static/assets/vendors/custom/highcharts/highcharts.js" type="text/javascript"></script>
+	<script src="/static/assets/vendors/custom/highcharts/data.js" type="text/javascript"></script>
+	<script src="/static/assets/vendors/custom/highcharts/exporting.js" type="text/javascript"></script>
+
+	<!--end::Page Scripts -->
+
+	<!-- begin::Page Loader -->
+	<script>
+		$(window).on('load', function () {
+			$('body').removeClass('m-page--loading');
+		});
+	</script>
+
+	<script>
+	let temp_points = {}, light_points = {}, last_date;
+	let temp_chart, light_chart;
+
+		function temp_data(){
+			$.ajax({
+				url: '/v1/live/get_temp/' + '2019',
+				success: function(points) {
+				    let series = temp_chart.series[0],
+						shift;
+				    points.forEach(point => {
+                        shift = series.length > 20;
+
+                        series.addPoint(point, shift);
+					});
+
+
+					//console.log(temp_points)
+					setTimeout(temp_data, 1000);    
+				},
+				cache: false
+			});
+		}
+
+		function light_data(){
+			$.ajax({
+				url: '/v1/live/get_light/' + '2019',
+				success: function(points) {
+                    let series = light_chart.series[0],
+                        shift;
+                    points.forEach(point => {
+                        shift = series.length > 20;
+
+                        series.addPoint(point, shift);
+                    });
+                    light_points = series.point;
+
+					setTimeout(light_data, 1000);    
+				},
+				cache: false
+			});
+
+		}
+		$(document).ready(function() {
+            $.ajax({
+                url: '/v1/live/get_light',
+                success: function(points) {
+                    light_chart = Highcharts.chart('container1', {
+
+                        time: {
+                            useUTC: false
+                        },
+
+                        legend: {
+                            align: 'right',
+                            verticalAlign: 'top',
+                            layout: 'vertical',
+                            x: 0,
+                            y: 100
+                        },
+
+                        title: {
+                            text: 'Live Light Sensor Data'
+                        },
+
+                        exporting: {
+                            enabled: false
+                        },
+
+                        series: points
+                    });
+                    light_points = points;
+
+                    setTimeout(light_data, 1000);
+                },
+                cache: false
+            });
+
+            $.ajax({
+                url: '/v1/live/get_temp',
+                success: function(points) {
+                    temp_chart = Highcharts.chart('container2', {
+
+                        time: {
+                            useUTC: false
+                        },
+
+                        legend: {
+                            align: 'right',
+                            verticalAlign: 'top',
+                            layout: 'vertical',
+                            x: 0,
+                            y: 100
+                        },
+
+                        title: {
+                            text: 'Live Tempreture Sensor Data'
+                        },
+
+                        exporting: {
+                            enabled: true
+                        },
+
+                        series: points
+                    });
+                    //last_date = points.data[0][0];
+                    console.log(points)
+                    temp_points = points;
+
+                    //compare(temp_points, points)
+
+                    setTimeout(temp_data, 1000);
+                },
+                cache: false
+            });
+			//createChart();
+		});
+	</script>
+	
+	
+
+	<!-- end::Page Loader -->
+</body>
+
+<!-- end::Body -->
+
+</html>
